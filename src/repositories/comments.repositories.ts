@@ -1,14 +1,14 @@
 import { getPool } from '../../db/config';
 import { Comment, CreateComment, UpdateComment } from '../Types/comments.types';
-import { Pool } from 'pg';
+import sql from 'mssql';
 
 export class CommentRepository {
   // Get all comments
   static async getAllComments(): Promise<Comment[]> {
     try {
-      const pool: Pool = await getPool();
-      const result = await pool.query('SELECT * FROM Comments ORDER BY CreatedAt DESC');
-      return result.rows;
+      const pool: sql.ConnectionPool = await getPool();
+      const result = await pool.request().query('SELECT * FROM Comments ORDER BY CreatedAt DESC');
+      return result.recordset;
     } catch (error) {
       console.error('Error fetching comments:', error);
       throw error;
@@ -18,9 +18,11 @@ export class CommentRepository {
   // Get comment by ID
   static async getCommentById(commentId: number): Promise<Comment | null> {
     try {
-      const pool: Pool = await getPool();
-      const result = await pool.query('SELECT * FROM Comments WHERE CommentID = $1', [commentId]);
-      return result.rows[0] || null;
+      const pool: sql.ConnectionPool = await getPool();
+      const result = await pool.request()
+        .input('commentId', sql.Int, commentId)
+        .query('SELECT * FROM Comments WHERE CommentID = @commentId');
+      return result.recordset[0] || null;
     } catch (error) {
       console.error('Error fetching comment by ID:', error);
       throw error;
@@ -30,9 +32,11 @@ export class CommentRepository {
   // Get comments by bug
   static async getCommentsByBug(bugId: number): Promise<Comment[]> {
     try {
-      const pool: Pool = await getPool();
-      const result = await pool.query('SELECT * FROM Comments WHERE BugID = $1 ORDER BY CreatedAt ASC', [bugId]);
-      return result.rows;
+      const pool: sql.ConnectionPool = await getPool();
+      const result = await pool.request()
+        .input('bugId', sql.Int, bugId)
+        .query('SELECT * FROM Comments WHERE BugID = @bugId ORDER BY CreatedAt ASC');
+      return result.recordset;
     } catch (error) {
       console.error('Error fetching comments by bug:', error);
       throw error;
@@ -42,9 +46,11 @@ export class CommentRepository {
   // Get comments by user
   static async getCommentsByUser(userId: number): Promise<Comment[]> {
     try {
-      const pool: Pool = await getPool();
-      const result = await pool.query('SELECT * FROM Comments WHERE UserID = $1 ORDER BY CreatedAt DESC', [userId]);
-      return result.rows;
+      const pool: sql.ConnectionPool = await getPool();
+      const result = await pool.request()
+        .input('userId', sql.Int, userId)
+        .query('SELECT * FROM Comments WHERE UserID = @userId ORDER BY CreatedAt DESC');
+      return result.recordset;
     } catch (error) {
       console.error('Error fetching comments by user:', error);
       throw error;
@@ -54,12 +60,13 @@ export class CommentRepository {
   // Create new comment
   static async createComment(commentData: CreateComment): Promise<Comment> {
     try {
-      const pool: Pool = await getPool();
-      const result = await pool.query(
-        'INSERT INTO Comments (BugID, UserID, CommentText) VALUES ($1, $2, $3) RETURNING *',
-        [commentData.BugID, commentData.UserID, commentData.CommentText]
-      );
-      return result.rows[0];
+      const pool: sql.ConnectionPool = await getPool();
+      const result = await pool.request()
+        .input('bugId', sql.Int, commentData.BugID)
+        .input('userId', sql.Int, commentData.UserID)
+        .input('commentText', sql.NVarChar, commentData.CommentText)
+        .query('INSERT INTO Comments (BugID, UserID, CommentText) OUTPUT INSERTED.* VALUES (@bugId, @userId, @commentText)');
+      return result.recordset[0];
     } catch (error) {
       console.error('Error creating comment:', error);
       throw error;
@@ -73,12 +80,12 @@ export class CommentRepository {
         throw new Error('Comment text is required for update');
       }
 
-      const pool: Pool = await getPool();
-      const result = await pool.query(
-        'UPDATE Comments SET CommentText = $1 WHERE CommentID = $2 RETURNING *',
-        [commentData.CommentText, commentId]
-      );
-      return result.rows[0] || null;
+      const pool: sql.ConnectionPool = await getPool();
+      const result = await pool.request()
+        .input('commentText', sql.NVarChar, commentData.CommentText)
+        .input('commentId', sql.Int, commentId)
+        .query('UPDATE Comments SET CommentText = @commentText OUTPUT INSERTED.* WHERE CommentID = @commentId');
+      return result.recordset[0] || null;
     } catch (error) {
       console.error('Error updating comment:', error);
       throw error;
@@ -88,9 +95,11 @@ export class CommentRepository {
   // Delete comment
   static async deleteComment(commentId: number): Promise<boolean> {
     try {
-      const pool: Pool = await getPool();
-      const result = await pool.query('DELETE FROM Comments WHERE CommentID = $1', [commentId]);
-      return (result.rowCount || 0) > 0;
+      const pool: sql.ConnectionPool = await getPool();
+      const result = await pool.request()
+        .input('commentId', sql.Int, commentId)
+        .query('DELETE FROM Comments WHERE CommentID = @commentId');
+      return (result.rowsAffected[0] || 0) > 0;
     } catch (error) {
       console.error('Error deleting comment:', error);
       throw error;
@@ -100,9 +109,11 @@ export class CommentRepository {
   // Delete all comments for a bug (useful when deleting a bug)
   static async deleteCommentsByBug(bugId: number): Promise<number> {
     try {
-      const pool: Pool = await getPool();
-      const result = await pool.query('DELETE FROM Comments WHERE BugID = $1', [bugId]);
-      return result.rowCount || 0;
+      const pool: sql.ConnectionPool = await getPool();
+      const result = await pool.request()
+        .input('bugId', sql.Int, bugId)
+        .query('DELETE FROM Comments WHERE BugID = @bugId');
+      return result.rowsAffected[0] || 0;
     } catch (error) {
       console.error('Error deleting comments by bug:', error);
       throw error;
