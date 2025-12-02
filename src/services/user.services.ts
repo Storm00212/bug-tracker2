@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { Response } from 'express';
 import { Request } from 'express';
 import jwt from 'jsonwebtoken';
+import sql from 'mssql';
 import { CreateUser, UpdateUser, User } from '../Types/user.types';
 import { UserRepository } from '../repositories/user.repositories';
 import { getPool } from '../../db/config';
@@ -115,18 +116,24 @@ export const deleteUser = async (userId: number): Promise<boolean> => {
 
     // Check for dependencies before deleting
     const pool = await getPool();
-    const projectCount = await pool.query('SELECT COUNT(*) FROM Projects WHERE CreatedBy = $1', [userId]);
-    if (parseInt(projectCount.rows[0].count) > 0) {
+    const projectCount = await pool.request()
+        .input('userId', sql.Int, userId)
+        .query('SELECT COUNT(*) as count FROM Projects WHERE CreatedBy = @userId');
+    if (parseInt(projectCount.recordset[0].count) > 0) {
         throw new AppError(ErrorType.CONFLICT, "Cannot delete user who has created projects");
     }
 
-    const assignedBugCount = await pool.query('SELECT COUNT(*) FROM Bugs WHERE AssignedTo = $1', [userId]);
-    if (parseInt(assignedBugCount.rows[0].count) > 0) {
+    const assignedBugCount = await pool.request()
+        .input('userId', sql.Int, userId)
+        .query('SELECT COUNT(*) as count FROM Bugs WHERE AssignedTo = @userId');
+    if (parseInt(assignedBugCount.recordset[0].count) > 0) {
         throw new AppError(ErrorType.CONFLICT, "Cannot delete user who is assigned to bugs");
     }
 
-    const commentCount = await pool.query('SELECT COUNT(*) FROM Comments WHERE UserID = $1', [userId]);
-    if (parseInt(commentCount.rows[0].count) > 0) {
+    const commentCount = await pool.request()
+        .input('userId', sql.Int, userId)
+        .query('SELECT COUNT(*) as count FROM Comments WHERE UserID = @userId');
+    if (parseInt(commentCount.recordset[0].count) > 0) {
         throw new AppError(ErrorType.CONFLICT, "Cannot delete user who has comments");
     }
 
