@@ -10,7 +10,7 @@ describe('Project Routes Integration Tests', () => {
     // Register and login user with unique email
     const uniqueEmail = `projecttest${Date.now()}@example.com`;
     const registerResponse = await request(app)
-      .post('/users/register')
+      .post('/api/users/register')
       .send({
         username: 'projecttester',
         email: uniqueEmail,
@@ -20,7 +20,7 @@ describe('Project Routes Integration Tests', () => {
     userId = registerResponse.body.user.UserID;
 
     const loginResponse = await request(app)
-      .post('/users/login')
+      .post('/api/users/login')
       .send({
         email: uniqueEmail,
         password: 'password123'
@@ -30,7 +30,7 @@ describe('Project Routes Integration Tests', () => {
 
   it('should get all projects', async () => {
     const response = await request(app)
-      .get('/projects')
+      .get('/api/projects')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -40,7 +40,7 @@ describe('Project Routes Integration Tests', () => {
 
   it('should create a new project', async () => {
     const response = await request(app)
-      .post('/projects')
+      .post('/api/projects')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         ProjectName: 'Test Project',
@@ -55,7 +55,7 @@ describe('Project Routes Integration Tests', () => {
 
   it('should get project by id', async () => {
     const response = await request(app)
-      .get(`/projects/${projectId}`)
+      .get(`/api/projects/${projectId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -65,7 +65,7 @@ describe('Project Routes Integration Tests', () => {
 
   it('should get projects by creator', async () => {
     const response = await request(app)
-      .get(`/projects/creator/${userId}`)
+      .get(`/api/projects/creator/${userId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -75,7 +75,7 @@ describe('Project Routes Integration Tests', () => {
 
   it('should update project', async () => {
     const response = await request(app)
-      .put(`/projects/${projectId}`)
+      .put(`/api/projects/${projectId}`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         ProjectName: 'Updated Test Project',
@@ -89,7 +89,7 @@ describe('Project Routes Integration Tests', () => {
 
   it('should delete project', async () => {
     const response = await request(app)
-      .delete(`/projects/${projectId}`)
+      .delete(`/api/projects/${projectId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
