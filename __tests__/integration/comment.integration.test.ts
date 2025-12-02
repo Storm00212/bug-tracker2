@@ -12,7 +12,7 @@ describe('Comment Routes Integration Tests', () => {
     // Register and login user with unique email
     const uniqueEmail = `commenttest${Date.now()}@example.com`;
     const registerResponse = await request(app)
-      .post('/users/register')
+      .post('/api/users/register')
       .send({
         username: 'commenttester',
         email: uniqueEmail,
@@ -22,7 +22,7 @@ describe('Comment Routes Integration Tests', () => {
     userId = registerResponse.body.user.UserID;
 
     const loginResponse = await request(app)
-      .post('/users/login')
+      .post('/api/users/login')
       .send({
         email: uniqueEmail,
         password: 'password123'
@@ -31,7 +31,7 @@ describe('Comment Routes Integration Tests', () => {
 
     // Create a project
     const projectResponse = await request(app)
-      .post('/projects')
+      .post('/api/projects')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         ProjectName: 'Test Project for Comments',
@@ -41,7 +41,7 @@ describe('Comment Routes Integration Tests', () => {
 
     // Create a bug
     const bugResponse = await request(app)
-      .post('/bugs')
+      .post('/api/bugs')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         Title: 'Test Bug for Comments',
@@ -56,7 +56,7 @@ describe('Comment Routes Integration Tests', () => {
 
   it('should get all comments', async () => {
     const response = await request(app)
-      .get('/comments')
+      .get('/api/comments')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -66,7 +66,7 @@ describe('Comment Routes Integration Tests', () => {
 
   it('should create a new comment', async () => {
     const response = await request(app)
-      .post('/comments')
+      .post('/api/comments')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         BugID: bugId,
@@ -81,7 +81,7 @@ describe('Comment Routes Integration Tests', () => {
 
   it('should get comment by id', async () => {
     const response = await request(app)
-      .get(`/comments/${commentId}`)
+      .get(`/api/comments/${commentId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -91,7 +91,7 @@ describe('Comment Routes Integration Tests', () => {
 
   it('should get comments by bug', async () => {
     const response = await request(app)
-      .get(`/comments/bug/${bugId}`)
+      .get(`/api/comments/bug/${bugId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -101,7 +101,7 @@ describe('Comment Routes Integration Tests', () => {
 
   it('should get comments by user', async () => {
     const response = await request(app)
-      .get(`/comments/user/${userId}`)
+      .get(`/api/comments/user/${userId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -111,7 +111,7 @@ describe('Comment Routes Integration Tests', () => {
 
   it('should update comment', async () => {
     const response = await request(app)
-      .put(`/comments/${commentId}`)
+      .put(`/api/comments/${commentId}`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         CommentText: 'Updated test comment'
@@ -124,7 +124,7 @@ describe('Comment Routes Integration Tests', () => {
 
   it('should delete comment', async () => {
     const response = await request(app)
-      .delete(`/comments/${commentId}`)
+      .delete(`/api/comments/${commentId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -134,7 +134,7 @@ describe('Comment Routes Integration Tests', () => {
   it('should delete comments by bug', async () => {
     // Create another comment first
     await request(app)
-      .post('/comments')
+      .post('/api/comments')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         BugID: bugId,
@@ -142,7 +142,7 @@ describe('Comment Routes Integration Tests', () => {
       });
 
     const response = await request(app)
-      .delete(`/comments/bug/${bugId}`)
+      .delete(`/api/comments/bug/${bugId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
