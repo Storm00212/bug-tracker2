@@ -11,7 +11,7 @@ describe('Bug Routes Integration Tests', () => {
     // Register and login user with unique email
     const uniqueEmail = `bugtest${Date.now()}@example.com`;
     const registerResponse = await request(app)
-      .post('/users/register')
+      .post('/api/users/register')
       .send({
         username: 'bugtester',
         email: uniqueEmail,
@@ -21,7 +21,7 @@ describe('Bug Routes Integration Tests', () => {
     userId = registerResponse.body.user.UserID;
 
     const loginResponse = await request(app)
-      .post('/users/login')
+      .post('/api/users/login')
       .send({
         email: uniqueEmail,
         password: 'password123'
@@ -30,7 +30,7 @@ describe('Bug Routes Integration Tests', () => {
 
     // Create a project
     const projectResponse = await request(app)
-      .post('/projects')
+      .post('/api/projects')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         ProjectName: 'Test Project',
@@ -41,7 +41,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should get all bugs', async () => {
     const response = await request(app)
-      .get('/bugs')
+      .get('/api/bugs')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -51,7 +51,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should create a new bug', async () => {
     const response = await request(app)
-      .post('/bugs')
+      .post('/api/bugs')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         Title: 'Test Bug',
@@ -70,7 +70,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should get bug by id', async () => {
     const response = await request(app)
-      .get(`/bugs/${bugId}`)
+      .get(`/api/bugs/${bugId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -80,7 +80,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should get bugs by project', async () => {
     const response = await request(app)
-      .get(`/bugs/project/${projectId}`)
+      .get(`/api/bugs/project/${projectId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -90,7 +90,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should get bugs by assignee', async () => {
     const response = await request(app)
-      .get(`/bugs/assignee/${userId}`)
+      .get(`/api/bugs/assignee/${userId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -100,7 +100,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should get bugs by reporter', async () => {
     const response = await request(app)
-      .get(`/bugs/reporter/${userId}`)
+      .get(`/api/bugs/reporter/${userId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -110,7 +110,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should get bugs by status', async () => {
     const response = await request(app)
-      .get('/bugs/status/Open')
+      .get('/api/bugs/status/Open')
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
@@ -120,7 +120,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should update bug', async () => {
     const response = await request(app)
-      .put(`/bugs/${bugId}`)
+      .put(`/api/bugs/${bugId}`)
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         Status: 'In Progress',
@@ -134,7 +134,7 @@ describe('Bug Routes Integration Tests', () => {
 
   it('should delete bug', async () => {
     const response = await request(app)
-      .delete(`/bugs/${bugId}`)
+      .delete(`/api/bugs/${bugId}`)
       .set('Authorization', `Bearer ${authToken}`);
 
     expect(response.status).toBe(200);
