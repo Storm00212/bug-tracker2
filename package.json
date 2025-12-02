@@ -34,6 +34,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@types/mssql": "^9.1.8",
     "assert": "^2.1.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
@@ -42,6 +43,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "jwt": "^0.2.0",
+    "mssql": "^12.1.1",
     "pg": "^8.11.0",
     "sql": "^0.78.0"
   }
