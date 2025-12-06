@@ -97,7 +97,7 @@ export const updateUserPasswordController = async (req: Request, res: Response) 
         }
         const { currentPassword, newPassword } = req.body;
         await updateUserPassword(userId, currentPassword, newPassword);
-        res.status(204).json({ message: "Password updated successfully" });
+        res.status(204).send();
     } catch (error: any) {
         handleControllerError(error, res);
     }
