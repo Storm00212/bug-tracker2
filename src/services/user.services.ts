@@ -14,6 +14,29 @@ export const getAllUsers = async (): Promise<User[]> => {
     return await UserRepository.getAllUsers();
 };
 
+// Get users by project (users who created the project or are assigned to bugs in the project)
+export const getUsersByProject = async (projectId: number): Promise<User[]> => {
+    const pool = await getPool();
+    const result = await pool.request()
+        .input('projectId', sql.Int, projectId)
+        .query(`
+            SELECT DISTINCT u.UserID, u.Username, u.Email, u.Role, u.CreatedAt
+            FROM Users u
+            LEFT JOIN Projects p ON u.UserID = p.CreatedBy
+            LEFT JOIN Bugs b ON (u.UserID = b.AssignedTo OR u.UserID = b.ReportedBy)
+            WHERE p.ProjectID = @projectId OR b.ProjectID = @projectId
+        `);
+
+    return result.recordset.map(user => ({
+        UserID: user.UserID,
+        Username: user.Username,
+        Email: user.Email,
+        PasswordHash: '', // Don't include password hash
+        Role: user.Role,
+        CreatedAt: user.CreatedAt
+    }));
+};
+
 
 const ensureUserexists =async(id: number) => {
   const verified = await UserRepository.getUserById(id);
