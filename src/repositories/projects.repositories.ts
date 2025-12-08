@@ -102,13 +102,27 @@ export class ProjectRepository {
 
   // Delete project
   static async deleteProject(projectId: number): Promise<boolean> {
+    const pool: sql.ConnectionPool = await getPool();
+    const transaction = new sql.Transaction(pool);
+
     try {
-      const pool: sql.ConnectionPool = await getPool();
-      const result = await pool.request()
+      await transaction.begin();
+
+      // First, delete all bugs associated with this project
+      // This will cascade delete comments due to FK constraint
+      await transaction.request()
+        .input('projectId', sql.Int, projectId)
+        .query('DELETE FROM Bugs WHERE ProjectID = @projectId');
+
+      // Then delete the project
+      const result = await transaction.request()
         .input('projectId', sql.Int, projectId)
         .query('DELETE FROM Projects WHERE ProjectID = @projectId');
+
+      await transaction.commit();
       return (result.rowsAffected[0] || 0) > 0;
     } catch (error) {
+      await transaction.rollback();
       console.error('Error deleting project:', error);
       throw error;
     }
