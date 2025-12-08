@@ -91,12 +91,13 @@ describe('User Routes Integration Tests', () => {
   });
 
   it('should update user profile', async () => {
+    const uniqueUpdateEmail = `updated${Date.now()}@example.com`;
     const response = await request(app)
       .put('/api/users/profile')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         username: 'updateduser',
-        email: 'updated@example.com',
+        email: uniqueUpdateEmail,
         role: 'user'
       });
 
