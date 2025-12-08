@@ -164,7 +164,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}"
+              "raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword123\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/change-password",
@@ -474,7 +474,7 @@
               "variable": [
                 {
                   "key": "status",
-                  "value": "open"
+                  "value": "Open"
                 }
               ]
             }
@@ -496,7 +496,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Test Bug\",\n  \"description\": \"A test bug\",\n  \"status\": \"open\",\n  \"priority\": \"medium\",\n  \"projectId\": 1,\n  \"assigneeId\": 1\n}"
+              "raw": "{\n  \"Title\": \"Test Bug\",\n  \"Description\": \"A test bug\",\n  \"Status\": \"Open\",\n  \"Priority\": \"Medium\",\n  \"ProjectID\": 1,\n  \"AssignedTo\": 1\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/bugs",
@@ -521,7 +521,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Bug\",\n  \"description\": \"Updated description\",\n  \"status\": \"in_progress\",\n  \"priority\": \"high\"\n}"
+              "raw": "{\n  \"Title\": \"Updated Bug\",\n  \"Description\": \"Updated description\",\n  \"Status\": \"In Progress\",\n  \"Priority\": \"High\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/bugs/:id",
@@ -666,7 +666,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"content\": \"This is a test comment\",\n  \"bugId\": 1\n}"
+              "raw": "{\n  \"CommentText\": \"This is a test comment\",\n  \"BugID\": 1\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/comments",
@@ -691,7 +691,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"content\": \"Updated comment content\"\n}"
+              "raw": "{\n  \"CommentText\": \"Updated comment content\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/comments/:id",
