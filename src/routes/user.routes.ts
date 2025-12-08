@@ -6,6 +6,9 @@ const userRoutes = (app:Express) => {
     // GET /users - Get all users
     app.get('/api/users', userController.getAllUsersController);
 
+    // GET /users/project/:projectId - Get users by project
+    app.get('/api/users/project/:projectId', userController.getUsersByProjectController);
+
     // POST /users/register - Create a new user
     app.post('/api/users/register', userController.createUserController);
 
