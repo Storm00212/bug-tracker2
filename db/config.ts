@@ -50,21 +50,13 @@ const pool = new sql.ConnectionPool(config);
 const MAX_RETRIES = 10;
 const RETRY_DELAY_MS = 10000;
 
-/**
- * Get MSSQL connection pool
- *
- * Implements connection pooling for efficient database access.
- * Includes automatic retry logic for connection failures.
- *
- * @returns Promise<sql.ConnectionPool> - Database connection pool
- * @throws Error if connection fails after all retries
- */
+
 export const getPool = async (): Promise<sql.ConnectionPool> => {
   // Test the connection with retry logic
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       await pool.connect();
-      console.log("\x1b[32m[DB]\x1b[0m ✅ Connected successfully to MSSQL");
+      console.log("\x1b[32m[DB]\x1b[0m  Connected successfully to MSSQL");
       return pool;
     } catch (error: any) {
       const code = error.code || "UNKNOWN";
@@ -75,27 +67,27 @@ export const getPool = async (): Promise<sql.ConnectionPool> => {
       // Provide helpful error messages for common connection issues
       switch (code) {
         case "ECONNREFUSED":
-          console.error("💡 Check if MSSQL is running and accessible.");
+          console.error(" Check if MSSQL is running and accessible.");
           break;
         case "ENOTFOUND":
-          console.error("💡 Database host not found — verify SQL_SERVER in your .env file.");
+          console.error(" Database host not found — verify SQL_SERVER in your .env file.");
           break;
         case "ELOGIN":
-          console.error("💡 Authentication failed — verify credentials in your .env file.");
+          console.error(" Authentication failed — verify credentials in your .env file.");
           break;
         case "ETIMEOUT":
-          console.error("💡 Timeout — check network/firewall settings or server availability.");
+          console.error(" Timeout — check network/firewall settings or server availability.");
           break;
         default:
-          console.error("💡 Unknown error — inspect .env variables or network configuration.");
+          console.error(" Unknown error — inspect .env variables or network configuration.");
       }
 
       // Retry connection if attempts remain
       if (attempt < MAX_RETRIES) {
-        console.log(`\x1b[33m[DB]\x1b[0m ⏳ Retrying in ${RETRY_DELAY_MS / 1000}s...`);
+        console.log(`\x1b[33m[DB]\x1b[0m  Retrying in ${RETRY_DELAY_MS / 1000}s...`);
         await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
       } else {
-        console.error("\x1b[31m[DB]\x1b[0m 🚨 Max retries reached. Unable to connect to MSSQL.");
+        console.error("\x1b[31m[DB]\x1b[0m  Max retries reached. Unable to connect to MSSQL.");
         throw error;
       }
     }
@@ -113,8 +105,8 @@ export const getPool = async (): Promise<sql.ConnectionPool> => {
 export const closePool = async (): Promise<void> => {
   try {
     await pool.close();
-    console.log("\x1b[33m[DB]\x1b[0m 🔒 MSSQL connection pool closed gracefully.");
+    console.log("\x1b[33m[DB]\x1b[0m  MSSQL connection pool closed gracefully.");
   } catch (err) {
-    console.error("\x1b[31m[DB]\x1b[0m ⚠️ Error closing MSSQL pool:", err);
+    console.error("\x1b[31m[DB]\x1b[0m  Error closing MSSQL pool:", err);
   }
 };
