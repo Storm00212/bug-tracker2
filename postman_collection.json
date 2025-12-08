@@ -36,6 +36,90 @@
       "item": [
         {
           "name": "Register User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Pre-request Script: Validate registration data",
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "",
+                  "// Validate required fields",
+                  "if (!requestBody.username || !requestBody.email || !requestBody.password) {",
+                  "    pm.test.skip('Registration data validation - missing required fields');",
+                  "    throw new Error('Missing required fields: username, email, password');",
+                  "}",
+                  "",
+                  "// Validate email format",
+                  "const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;",
+                  "if (!emailRegex.test(requestBody.email)) {",
+                  "    pm.test.skip('Registration data validation - invalid email format');",
+                  "    throw new Error('Invalid email format');",
+                  "}",
+                  "",
+                  "// Validate password strength",
+                  "if (requestBody.password.length < 8) {",
+                  "    pm.test.skip('Registration data validation - weak password');",
+                  "    throw new Error('Password must be at least 8 characters');",
+                  "}",
+                  "",
+                  "// Log registration attempt",
+                  "console.log(' Attempting user registration for:', requestBody.email);",
+                  "pm.collectionVariables.set('lastRegisteredEmail', requestBody.email);",
+                  "pm.collectionVariables.set('lastRegisteredUsername', requestBody.username);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Post-response Script: Validate registration response",
+                  "",
+                  "// Test response status",
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "// Test response structure",
+                  "pm.test('Response has user object', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "    pm.expect(jsonData.user).to.have.property('UserID');",
+                  "    pm.expect(jsonData.user).to.have.property('Username');",
+                  "    pm.expect(jsonData.user).to.have.property('Email');",
+                  "});",
+                  "",
+                  "// Test user data matches request",
+                  "pm.test('User data matches registration request', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const requestBody = JSON.parse(pm.request.body.raw);",
+                  "    pm.expect(jsonData.user.Username).to.eql(requestBody.username);",
+                  "    pm.expect(jsonData.user.Email).to.eql(requestBody.email);",
+                  "});",
+                  "",
+                  "// Store user ID for future tests",
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('registeredUserId', jsonData.user.UserID);",
+                  "    console.log(' User registered successfully with ID:', jsonData.user.UserID);",
+                  "}",
+                  "",
+                  "// Test response time",
+                  "pm.test('Response time is less than 2000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "// Log response details",
+                  "console.log(' Registration Response:', {",
+                  "    status: pm.response.code,",
+                  "    responseTime: pm.response.responseTime + 'ms',",
+                  "    userId: pm.collectionVariables.get('registeredUserId')",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -59,13 +143,85 @@
           "name": "Login User",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Pre-request Script: Prepare login credentials",
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "",
+                  "// Validate login data",
+                  "if (!requestBody.email || !requestBody.password) {",
+                  "    pm.test.skip('Login data validation - missing credentials');",
+                  "    throw new Error('Missing email or password');",
+                  "}",
+                  "",
+                  "// Log login attempt",
+                  "console.log(' Attempting login for:', requestBody.email);",
+                  "pm.collectionVariables.set('loginAttemptEmail', requestBody.email);",
+                  "",
+                  "// Check if we have a registered user to login with",
+                  "const registeredEmail = pm.collectionVariables.get('lastRegisteredEmail');",
+                  "if (registeredEmail && registeredEmail !== requestBody.email) {",
+                  "    console.log('  Warning: Logging in with different email than last registered user');",
+                  "}"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "exec": [
+                  "// Post-response Script: Validate login response and setup auth",
+                  "",
+                  "// Test response status",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response structure",
+                  "pm.test('Response has required authentication data', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "    pm.expect(jsonData).to.have.property('user');",
+                  "    pm.expect(jsonData.user).to.have.property('UserID');",
+                  "    pm.expect(jsonData.user).to.have.property('Username');",
+                  "    pm.expect(jsonData.user).to.have.property('Email');",
+                  "});",
+                  "",
+                  "// Test JWT token format",
+                  "pm.test('JWT token is properly formatted', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const tokenParts = jsonData.token.split('.');",
+                  "    pm.expect(tokenParts).to.have.lengthOf(3);",
+                  "});",
+                  "",
+                  "// Store authentication data",
                   "if (pm.response.code === 200) {",
-                  "    const response = pm.response.json();",
-                  "    pm.collectionVariables.set('token', response.token);",
-                  "}"
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "    pm.collectionVariables.set('currentUserId', jsonData.user.UserID);",
+                  "    pm.collectionVariables.set('currentUsername', jsonData.user.Username);",
+                  "    pm.collectionVariables.set('currentUserEmail', jsonData.user.Email);",
+                  "    console.log(' Login successful for user:', jsonData.user.Username);",
+                  "}",
+                  "",
+                  "// Test response time",
+                  "pm.test('Response time is less than 1500ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(1500);",
+                  "});",
+                  "",
+                  "// Test security headers",
+                  "pm.test('Response includes security headers', function () {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.contain('application/json');",
+                  "});",
+                  "",
+                  "// Log authentication details",
+                  "console.log(' Authentication Details:', {",
+                  "    status: pm.response.code,",
+                  "    responseTime: pm.response.responseTime + 'ms',",
+                  "    userId: pm.collectionVariables.get('currentUserId'),",
+                  "    hasToken: !!pm.collectionVariables.get('token')",
+                  "});"
                 ]
               }
             }
@@ -174,6 +330,96 @@
           }
         },
         {
+          "name": "Get Users by Project",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Pre-request Script: Validate project ID for user retrieval",
+                  "const projectId = pm.request.url.variables.get('projectId');",
+                  "if (!projectId || projectId === '1') {",
+                  "    console.log('  Using default project ID. Consider setting a valid project ID.');",
+                  "}",
+                  "",
+                  "console.log(' Fetching users for project:', projectId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Post-response Script: Validate project users retrieval",
+                  "",
+                  "// Test response status",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response structure",
+                  "pm.test('Response has users array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('users');",
+                  "    pm.expect(jsonData.users).to.be.an('array');",
+                  "});",
+                  "",
+                  "// Test user data structure",
+                  "pm.test('Each user has required fields', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    jsonData.users.forEach(function(user) {",
+                  "        pm.expect(user).to.have.property('UserID');",
+                  "        pm.expect(user).to.have.property('Username');",
+                  "        pm.expect(user).to.have.property('Email');",
+                  "        pm.expect(user).to.have.property('Role');",
+                  "    });",
+                  "});",
+                  "",
+                  "// Test data integrity",
+                  "pm.test('User IDs are unique', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const userIds = jsonData.users.map(u => u.UserID);",
+                  "    const uniqueIds = [...new Set(userIds)];",
+                  "    pm.expect(userIds.length).to.eql(uniqueIds.length);",
+                  "});",
+                  "",
+                  "// Store users count",
+                  "const jsonData = pm.response.json();",
+                  "pm.collectionVariables.set('projectUsersCount', jsonData.users.length);",
+                  "",
+                  "// Log results",
+                  "console.log(' Project Users Retrieval:', {",
+                  "    status: pm.response.code,",
+                  "    responseTime: pm.response.responseTime + 'ms',",
+                  "    usersCount: jsonData.users.length,",
+                  "    projectId: pm.request.url.variables.get('projectId')",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/project/:projectId",
+              "host": ["{{baseUrl}}"],
+              "path": ["/api/users/project/:projectId"],
+              "variable": [
+                {
+                  "key": "projectId",
+                  "value": "1"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Delete User",
           "request": {
             "method": "DELETE",
@@ -203,6 +449,109 @@
       "item": [
         {
           "name": "Get All Projects",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Pre-request Script: Prepare for projects retrieval",
+                  "const token = pm.collectionVariables.get('token');",
+                  "if (!token) {",
+                  "    console.log('  No authentication token available');",
+                  "}",
+                  "",
+                  "console.log(' Fetching all projects...');",
+                  "pm.collectionVariables.set('projectsFetchStartTime', new Date().getTime());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Post-response Script: Comprehensive projects data validation",
+                  "",
+                  "// Test response status",
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test response structure",
+                  "pm.test('Response has projects array', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('projects');",
+                  "    pm.expect(jsonData.projects).to.be.an('array');",
+                  "});",
+                  "",
+                  "// Test projects array structure",
+                  "pm.test('Each project has required fields', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    jsonData.projects.forEach(function(project, index) {",
+                  "        pm.expect(project).to.have.property('ProjectID');",
+                  "        pm.expect(project).to.have.property('ProjectName');",
+                  "        pm.expect(project).to.have.property('CreatedBy');",
+                  "        pm.expect(project).to.have.property('CreatedAt');",
+                  "        ",
+                  "        // Validate data types",
+                  "        pm.expect(project.ProjectID).to.be.a('number');",
+                  "        pm.expect(project.ProjectName).to.be.a('string');",
+                  "        pm.expect(project.CreatedBy).to.be.a('number');",
+                  "        pm.expect(project.ProjectName.length).to.be.greaterThan(0);",
+                  "    });",
+                  "});",
+                  "",
+                  "// Test data integrity",
+                  "pm.test('Project names are unique', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const projectNames = jsonData.projects.map(p => p.ProjectName);",
+                  "    const uniqueNames = [...new Set(projectNames)];",
+                  "    pm.expect(projectNames.length).to.eql(uniqueNames.length);",
+                  "});",
+                  "",
+                  "// Test timestamp validity",
+                  "pm.test('All projects have valid creation timestamps', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    jsonData.projects.forEach(function(project) {",
+                  "        const createdAt = new Date(project.CreatedAt);",
+                  "        pm.expect(createdAt.toString()).to.not.eql('Invalid Date');",
+                  "        pm.expect(createdAt.getTime()).to.be.below(new Date().getTime());",
+                  "    });",
+                  "});",
+                  "",
+                  "// Test response time",
+                  "pm.test('Response time is acceptable', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "",
+                  "// Store projects count for reference",
+                  "const jsonData = pm.response.json();",
+                  "pm.collectionVariables.set('totalProjects', jsonData.projects.length);",
+                  "",
+                  "// Performance analysis",
+                  "const startTime = pm.collectionVariables.get('projectsFetchStartTime');",
+                  "if (startTime) {",
+                  "    const totalTime = new Date().getTime() - startTime;",
+                  "    console.log('⏱  Projects fetch performance:', totalTime + 'ms');",
+                  "}",
+                  "",
+                  "// Log results summary",
+                  "console.log(' Projects Retrieval Summary:', {",
+                  "    status: pm.response.code,",
+                  "    responseTime: pm.response.responseTime + 'ms',",
+                  "    totalProjects: jsonData.projects.length,",
+                  "    sampleProject: jsonData.projects.length > 0 ? jsonData.projects[0].ProjectName : 'None'",
+                  "});",
+                  "",
+                  "// Test for potential issues",
+                  "pm.test('No projects with empty names', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const emptyNames = jsonData.projects.filter(p => !p.ProjectName || p.ProjectName.trim() === '');",
+                  "    pm.expect(emptyNames.length).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -260,12 +609,164 @@
                   "key": "creatorId",
                   "value": "1"
                 }
+              ],
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Global Pre-request Script: Setup for all requests",
+                      "console.log(' Starting Bug Tracker API Test Suite');",
+                      "console.log('Environment:', pm.environment.name || 'No Environment');",
+                      "console.log('Collection Variables:', Object.keys(pm.collectionVariables.toObject()));",
+                      "",
+                      "// Initialize test counters",
+                      "pm.collectionVariables.set('testStartTime', new Date().getTime());",
+                      "pm.collectionVariables.set('testsPassed', 0);",
+                      "pm.collectionVariables.set('testsFailed', 0);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Global Test Script: Cleanup and summary after all requests",
+                      "",
+                      "// Calculate test duration",
+                      "const startTime = pm.collectionVariables.get('testStartTime');",
+                      "if (startTime) {",
+                      "    const duration = new Date().getTime() - startTime;",
+                      "    console.log('  Total test suite duration:', duration + 'ms');",
+                      "}",
+                      "",
+                      "// Log final state",
+                      "console.log(' Final Collection State:', {",
+                      "    authenticated: !!pm.collectionVariables.get('token'),",
+                      "    currentUser: pm.collectionVariables.get('currentUsername'),",
+                      "    totalProjects: pm.collectionVariables.get('totalProjects'),",
+                      "    lastProjectId: pm.collectionVariables.get('lastProjectId'),",
+                      "    lastBugId: pm.collectionVariables.get('lastBugId'),",
+                      "    registeredUserId: pm.collectionVariables.get('registeredUserId')",
+                      "});",
+                      "",
+                      "// Performance summary",
+                      "const responseTime = pm.response.responseTime;",
+                      "if (responseTime > 5000) {",
+                      "    console.warn('  Slow response detected:', responseTime + 'ms');",
+                      "} else if (responseTime > 2000) {",
+                      "    console.log(' Moderate response time:', responseTime + 'ms');",
+                      "} else {",
+                      "    console.log(' Fast response time:', responseTime + 'ms');",
+                      "}",
+                      "",
+                      "// Final status",
+                      "console.log(' Bug Tracker API Test Suite completed');"
+                    ]
+                  }
+                }
               ]
             }
           }
         },
         {
           "name": "Create Project",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Pre-request Script: Validate project creation data",
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "",
+                  "// Check authentication",
+                  "const token = pm.collectionVariables.get('token');",
+                  "if (!token) {",
+                  "    pm.test.skip('Authentication check - no token available');",
+                  "    throw new Error('No authentication token available. Please login first.');",
+                  "}",
+                  "",
+                  "// Validate required fields",
+                  "if (!requestBody.ProjectName || requestBody.ProjectName.trim() === '') {",
+                  "    pm.test.skip('Project data validation - missing project name');",
+                  "    throw new Error('Project name is required');",
+                  "}",
+                  "",
+                  "// Validate project name length",
+                  "if (requestBody.ProjectName.length > 100) {",
+                  "    pm.test.skip('Project data validation - project name too long');",
+                  "    throw new Error('Project name must be 100 characters or less');",
+                  "}",
+                  "",
+                  "// Log project creation attempt",
+                  "console.log(' Creating project:', requestBody.ProjectName);",
+                  "pm.collectionVariables.set('lastProjectName', requestBody.ProjectName);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Post-response Script: Validate project creation",
+                  "",
+                  "// Test response status",
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "// Test response structure",
+                  "pm.test('Response has project object', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('project');",
+                  "    pm.expect(jsonData.project).to.have.property('ProjectID');",
+                  "    pm.expect(jsonData.project).to.have.property('ProjectName');",
+                  "    pm.expect(jsonData.project).to.have.property('CreatedBy');",
+                  "    pm.expect(jsonData.project).to.have.property('CreatedAt');",
+                  "});",
+                  "",
+                  "// Test project data matches request",
+                  "pm.test('Project data matches creation request', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const requestBody = JSON.parse(pm.request.body.raw);",
+                  "    pm.expect(jsonData.project.ProjectName).to.eql(requestBody.ProjectName);",
+                  "    if (requestBody.Description) {",
+                  "        pm.expect(jsonData.project.Description).to.eql(requestBody.Description);",
+                  "    }",
+                  "});",
+                  "",
+                  "// Test project ownership",
+                  "pm.test('Project is owned by authenticated user', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const currentUserId = pm.collectionVariables.get('currentUserId');",
+                  "    pm.expect(jsonData.project.CreatedBy).to.eql(parseInt(currentUserId));",
+                  "});",
+                  "",
+                  "// Store project ID for future tests",
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('lastProjectId', jsonData.project.ProjectID);",
+                  "    console.log(' Project created successfully with ID:', jsonData.project.ProjectID);",
+                  "}",
+                  "",
+                  "// Test response time",
+                  "pm.test('Response time is less than 2000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "// Log project creation details",
+                  "console.log(' Project Creation Response:', {",
+                  "    status: pm.response.code,",
+                  "    responseTime: pm.response.responseTime + 'ms',",
+                  "    projectId: pm.collectionVariables.get('lastProjectId'),",
+                  "    projectName: pm.collectionVariables.get('lastProjectName')",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -482,6 +983,131 @@
         },
         {
           "name": "Create Bug",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Pre-request Script: Validate bug creation data",
+                  "const requestBody = JSON.parse(pm.request.body.raw);",
+                  "",
+                  "// Check authentication",
+                  "const token = pm.collectionVariables.get('token');",
+                  "if (!token) {",
+                  "    pm.test.skip('Authentication check - no token available');",
+                  "    throw new Error('No authentication token available. Please login first.');",
+                  "}",
+                  "",
+                  "// Validate required fields",
+                  "if (!requestBody.Title || requestBody.Title.trim() === '') {",
+                  "    pm.test.skip('Bug data validation - missing title');",
+                  "    throw new Error('Bug title is required');",
+                  "}",
+                  "",
+                  "if (!requestBody.ProjectID) {",
+                  "    pm.test.skip('Bug data validation - missing project ID');",
+                  "    throw new Error('Project ID is required');",
+                  "}",
+                  "",
+                  "// Validate enums",
+                  "const validStatuses = ['Open', 'In Progress', 'Resolved'];",
+                  "const validPriorities = ['Low', 'Medium', 'High', 'Critical'];",
+                  "",
+                  "if (requestBody.Status && !validStatuses.includes(requestBody.Status)) {",
+                  "    pm.test.skip('Bug data validation - invalid status');",
+                  "    throw new Error('Invalid status. Must be one of: ' + validStatuses.join(', '));",
+                  "}",
+                  "",
+                  "if (requestBody.Priority && !validPriorities.includes(requestBody.Priority)) {",
+                  "    pm.test.skip('Bug data validation - invalid priority');",
+                  "    throw new Error('Invalid priority. Must be one of: ' + validPriorities.join(', '));",
+                  "}",
+                  "",
+                  "// Set defaults if not provided",
+                  "if (!requestBody.Status) requestBody.Status = 'Open';",
+                  "if (!requestBody.Priority) requestBody.Priority = 'Medium';",
+                  "",
+                  "// Update request body with defaults",
+                  "pm.request.body.raw = JSON.stringify(requestBody, null, 2);",
+                  "",
+                  "// Log bug creation attempt",
+                  "console.log(' Creating bug:', requestBody.Title, 'in project:', requestBody.ProjectID);",
+                  "pm.collectionVariables.set('lastBugTitle', requestBody.Title);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Post-response Script: Validate bug creation",
+                  "",
+                  "// Test response status",
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "// Test response structure",
+                  "pm.test('Response has bug object', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('bug');",
+                  "    pm.expect(jsonData.bug).to.have.property('BugID');",
+                  "    pm.expect(jsonData.bug).to.have.property('Title');",
+                  "    pm.expect(jsonData.bug).to.have.property('Status');",
+                  "    pm.expect(jsonData.bug).to.have.property('Priority');",
+                  "    pm.expect(jsonData.bug).to.have.property('ProjectID');",
+                  "    pm.expect(jsonData.bug).to.have.property('CreatedAt');",
+                  "});",
+                  "",
+                  "// Test bug data matches request",
+                  "pm.test('Bug data matches creation request', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const requestBody = JSON.parse(pm.request.body.raw);",
+                  "    pm.expect(jsonData.bug.Title).to.eql(requestBody.Title);",
+                  "    pm.expect(jsonData.bug.Status).to.eql(requestBody.Status);",
+                  "    pm.expect(jsonData.bug.Priority).to.eql(requestBody.Priority);",
+                  "    pm.expect(jsonData.bug.ProjectID).to.eql(requestBody.ProjectID);",
+                  "});",
+                  "",
+                  "// Test bug ownership",
+                  "pm.test('Bug is reported by authenticated user', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const currentUserId = pm.collectionVariables.get('currentUserId');",
+                  "    pm.expect(jsonData.bug.ReportedBy).to.eql(parseInt(currentUserId));",
+                  "});",
+                  "",
+                  "// Store bug ID for future tests",
+                  "if (pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('lastBugId', jsonData.bug.BugID);",
+                  "    console.log(' Bug created successfully with ID:', jsonData.bug.BugID);",
+                  "}",
+                  "",
+                  "// Test response time",
+                  "pm.test('Response time is less than 2000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});",
+                  "",
+                  "// Test data integrity",
+                  "pm.test('Bug has valid creation timestamp', function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const createdAt = new Date(jsonData.bug.CreatedAt);",
+                  "    const now = new Date();",
+                  "    const timeDiff = Math.abs(now - createdAt);",
+                  "    pm.expect(timeDiff).to.be.below(60000); // Within 1 minute",
+                  "});",
+                  "",
+                  "// Log bug creation details",
+                  "console.log(' Bug Creation Response:', {",
+                  "    status: pm.response.code,",
+                  "    responseTime: pm.response.responseTime + 'ms',",
+                  "    bugId: pm.collectionVariables.get('lastBugId'),",
+                  "    bugTitle: pm.collectionVariables.get('lastBugTitle')",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
