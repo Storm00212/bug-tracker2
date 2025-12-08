@@ -22,7 +22,7 @@ const userRoutes = (app:Express) => {
     app.put('/api/users/change-password', userController.updateUserPasswordController);
 
     // DELETE /users/:id - Delete user
-    app.delete('/api/users/:id', userController.deleteUserController);
+    app.delete('/api/users/:id', requireAuth, userController.deleteUserController);
 }
 
 export default userRoutes;
