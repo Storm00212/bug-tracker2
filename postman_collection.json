@@ -280,7 +280,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test Project\",\n  \"description\": \"A test project\"\n}"
+              "raw": "{\n  \"ProjectName\": \"Test Project\",\n  \"Description\": \"A test project\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/projects",
@@ -305,7 +305,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Project\",\n  \"description\": \"Updated description\"\n}"
+              "raw": "{\n  \"ProjectName\": \"Updated Project\",\n  \"Description\": \"Updated description\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/projects/:id",
