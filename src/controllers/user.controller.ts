@@ -6,7 +6,8 @@ import {
     getUserProfile,
     updateUserProfile,
     updateUserPassword,
-    deleteUser
+    deleteUser,
+    getUsersByProject
 } from '../services/user.services';
 import { handleControllerError } from '../utils/errorHandler';
 
@@ -14,6 +15,20 @@ import { handleControllerError } from '../utils/errorHandler';
 export const getAllUsersController = async (req: Request, res: Response) => {
     try {
         const users = await getAllUsers();
+        res.status(200).json({ users });
+    } catch (error: any) {
+        handleControllerError(error, res);
+    }
+};
+
+// Get users by project
+export const getUsersByProjectController = async (req: Request, res: Response) => {
+    try {
+        const projectId = parseInt(req.params.projectId);
+        if (!projectId || isNaN(projectId)) {
+            return res.status(400).json({ message: "Invalid project ID" });
+        }
+        const users = await getUsersByProject(projectId);
         res.status(200).json({ users });
     } catch (error: any) {
         handleControllerError(error, res);
