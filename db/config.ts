@@ -34,7 +34,7 @@ const config: sql.config = {
     encrypt: true, // Use encryption for Azure
     trustServerCertificate: false, // Do not trust self-signed certificates
     enableArithAbort: true,
-    connectionTimeout: 30000,
+    connectTimeout: 30000,
     requestTimeout: 30000,
   },
   pool: {
