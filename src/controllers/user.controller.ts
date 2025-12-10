@@ -39,10 +39,11 @@ export const getUsersByProjectController = async (req: Request, res: Response) =
 export const createUserController = async (req: Request, res: Response) => {
     try {
         const userData = req.body;
-        const createdUser = await createUser(userData);
+        const result = await createUser(userData);
         res.status(201).json({
             message: "User created successfully",
-            user: createdUser
+            user: result.user,
+            token: result.token
         });
     } catch (error: any) {
         handleControllerError(error, res);
