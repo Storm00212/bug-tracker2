@@ -79,23 +79,34 @@ const validateAndParseCredentials = async (body:any): Promise<CreateUser> => {
 }
 
 export const createUser = async (userData: any) => {
-    if(!userData){
-        throw new Error("Please fill in credentials");
-    }
-    const newUser = await validateAndParseCredentials(userData);
+     if(!userData){
+         throw new Error("Please fill in credentials");
+     }
+     const newUser = await validateAndParseCredentials(userData);
 
-    // Check if user already exists
-    const existingUser = await UserRepository.getUserByEmail(newUser.Email);
-    if (existingUser) {
-        throw new Error("User with this email already exists");
-    }
+     // Check if user already exists
+     const existingUser = await UserRepository.getUserByEmail(newUser.Email);
+     if (existingUser) {
+         throw new Error("User with this email already exists");
+     }
 
-    // Create the user
-    const createdUser = await UserRepository.createUser(newUser);
+     // Create the user
+     const createdUser = await UserRepository.createUser(newUser);
 
-    // Remove password hash from response
-    const { PasswordHash, ...userResponse } = createdUser;
-    return userResponse;
+     // Generate JWT token
+     const token = jwt.sign(
+         {
+             userId: createdUser.UserID,
+             email: createdUser.Email,
+             role: createdUser.Role
+         },
+         process.env.JWT_SECRET || 'your-secret-key',
+         { expiresIn: '24h' }
+     );
+
+     // Remove password hash from response
+     const { PasswordHash, ...userResponse } = createdUser;
+     return { user: userResponse, token };
 }
 
 // Login user
